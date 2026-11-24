@@ -26,6 +26,20 @@ Requires Python 3.13 or newer.
   three-in-one climate devices.
 - Remote-controlled devices learned on an RM MAX (`remote`).
 
+## Security
+
+The gateway protocol has no authentication. The server identifies a gateway
+by the MAC address in its discovery and heartbeat messages, and the session
+follows the address those messages come from, so a gateway that changes its
+IP address or port reconnects right away. Another host on the same network
+that knows the gateway's MAC address can therefore take over its session.
+The library logs a warning whenever a session moves. Use it on a trusted
+local network only, and do not expose the UDP port to the internet or to
+untrusted networks.
+
+Device and family keys are kept out of the `repr` of the data classes, so
+logging a device or family does not write them to the log.
+
 ## Development
 
 ```bash

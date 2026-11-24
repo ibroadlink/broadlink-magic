@@ -128,7 +128,7 @@ class VirtualSubToken:
 
     did: str
     pid: str
-    token: str
+    token: str = field(repr=False)
     type: str = ""
 
 
@@ -147,8 +147,8 @@ class ImportedDevice:
     ble_device_type: str = ""
     devtype: int | None = None
     room_id: int | None = None
-    token: str = ""
-    bletoken: str = ""
+    token: str = field(default="", repr=False)
+    bletoken: str = field(default="", repr=False)
     version: str = ""
     channel_count: int = 1
     channel_names: list[str] = field(default_factory=list)
@@ -266,9 +266,9 @@ class Family:
 
     family_id: str
     name: str
-    bletoken: str
+    bletoken: str = field(repr=False)
     pid: str = ""
-    token: str = ""
+    token: str = field(default="", repr=False)
     rooms: list[Room] = field(default_factory=list)
     devices: list[ImportedDevice] = field(default_factory=list)
     groups: list[ImportedGroup] = field(default_factory=list)

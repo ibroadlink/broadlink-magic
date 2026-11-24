@@ -120,7 +120,17 @@ class _InboundProtocol(asyncio.DatagramProtocol):
 
 
 class InboundGatewayRegistry:
-    """One fixed UDP listener shared by all imported families."""
+    """One fixed UDP listener shared by all imported families.
+
+    The gateway protocol has no authentication: a gateway is identified by
+    the MAC in its discovery and heartbeat messages, and its session follows
+    the address those messages come from. Use it on a trusted local network.
+
+    ``local_mac`` is the six-byte MAC sent back in discovery and heartbeat
+    responses. Gateways do not rely on it staying the same, so the default
+    from ``uuid.getnode()`` is fine even where that value is random, for
+    example in containers. Pass a fixed value to keep it stable.
+    """
 
     def __init__(
         self,
@@ -179,6 +189,18 @@ class InboundGatewayRegistry:
             return
         handshake_mac = gateway_mac_from_handshake(data)
         if handshake_mac is not None:
+            previous = [
+                peer
+                for peer, peer_mac in self._peers.items()
+                if peer_mac == mac and peer != addr
+            ]
+            if previous:
+                _LOGGER.warning(
+                    "Gateway %s session moved from %s to %s",
+                    mac,
+                    ", ".join(f"{host}:{port}" for host, port in previous),
+                    f"{addr[0]}:{addr[1]}",
+                )
             self._peers = {
                 peer: peer_mac
                 for peer, peer_mac in self._peers.items()

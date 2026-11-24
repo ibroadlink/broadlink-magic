@@ -154,8 +154,11 @@ def unpack_lan_response(
         return message_type, status, sequence, None, b""
 
     key = _decode_aes_key(aes_key)
+    ciphertext = data[56:]
+    if len(ciphertext) % 16:
+        raise ProtocolError("LAN AES payload length is not a multiple of 16")
     decryptor = Cipher(algorithms.AES(key), modes.CBC(AES_PUBLIC_IV)).decryptor()
-    plaintext = decryptor.update(data[56:]) + decryptor.finalize()
+    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
     expected_checksum = struct.unpack_from("<H", data, 52)[0]
     if lan_checksum(plaintext) != expected_checksum:
         raise ProtocolError("invalid LAN AES payload checksum")

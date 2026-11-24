@@ -2,8 +2,10 @@
 
 import struct
 
+import pytest
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from broadlink_magic.exceptions import ProtocolError
 from broadlink_magic.lan import (
     AES_PUBLIC_IV,
     LAN_CONTROL,
@@ -85,3 +87,17 @@ def test_unpack_encrypted_control_response() -> None:
         UART_BLE_CONTROL,
     )
     assert payload == fastcon
+
+
+def test_truncated_encrypted_response_is_protocol_error() -> None:
+    response = pack_lan_packet(
+        bytes(22),
+        uart_type=UART_BLE_CONTROL,
+        message_type=LAN_CONTROL_RESPONSE,
+        devtype=0xAF8B,
+        mac="aabbccddeeff",
+        aes_key=AES_KEY,
+        sequence=7,
+    )
+    with pytest.raises(ProtocolError, match="multiple of 16"):
+        unpack_lan_response(response[:-1], AES_KEY)

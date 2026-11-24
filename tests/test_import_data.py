@@ -8,9 +8,11 @@ import pytest
 
 from broadlink_magic import (
     DeviceKind,
+    Family,
     ImportDataError,
     ImportedDevice,
     RMProfile,
+    VirtualSubToken,
     parse_import_payload,
 )
 
@@ -376,3 +378,33 @@ def test_function_list_codes_are_parsed_from_extend() -> None:
     assert learned.rm_profile is RMProfile.LEARNED_IR
     assert learned.functions == {"红外开关": 1}
     assert ac.functions == {}
+
+
+def test_keys_are_not_in_repr() -> None:
+    device = ImportedDevice(
+        did="device",
+        pid="",
+        name="Device",
+        token="device-token",
+        bletoken="device-ble-key",
+    )
+    family = Family(
+        family_id="family",
+        name="Home",
+        bletoken="family-ble-key",
+        token="family-token",
+        devices=[device],
+        virtual_subtokens=[VirtualSubToken(did="virtual", pid="", token="virtual-token")],
+    )
+
+    text = repr(family)
+    assert "Home" in text
+    assert "Device" in text
+    for secret in (
+        "device-token",
+        "device-ble-key",
+        "family-ble-key",
+        "family-token",
+        "virtual-token",
+    ):
+        assert secret not in text

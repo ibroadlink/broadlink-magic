@@ -2,6 +2,8 @@
 
 from typing import cast
 
+import pytest
+
 from broadlink_magic import (
     MSG_CONTROL,
     MSG_DISCOVERY,
@@ -102,6 +104,22 @@ def test_registry_moves_peer_only_on_handshake() -> None:
     registry.datagram_received(control, old_peer)
     registry.datagram_received(control, new_peer)
     assert received[1:] == [(heartbeat, new_peer), (control, new_peer)]
+
+
+def test_registry_warns_when_session_moves(caplog: pytest.LogCaptureFixture) -> None:
+    registry = InboundGatewayRegistry(local_mac=b"\0" * 6)
+    registry.transport = cast("object", FakeTransport())  # type: ignore[assignment]
+    registry.register("aabbccddeeff", lambda _data, _addr: None)
+    heartbeat = pack_message(MSG_HEARTBEAT, 1, bytes.fromhex("aabbccddeeff"))
+
+    registry.datagram_received(heartbeat, ("192.0.2.10", 41001))
+    registry.datagram_received(heartbeat, ("192.0.2.10", 41001))
+    assert "session moved" not in caplog.text
+
+    registry.datagram_received(heartbeat, ("198.51.100.20", 41002))
+    assert (
+        "Gateway aabbccddeeff session moved from 192.0.2.10:41001 to 198.51.100.20:41002"
+    ) in caplog.text
 
 
 def test_registry_replies_to_discovery_and_ignores_unknown_mac() -> None:
